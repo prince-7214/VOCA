@@ -88,6 +88,17 @@ app.include_router(contacts_router)
 app.include_router(emails_router)
 
 
+@app.get("/")
+async def root():
+    """Root endpoint welcoming users and pointing to API documentation."""
+    return {
+        "message": "VOCA API is running!",
+        "documentation": "/docs",
+        "health": "/health",
+        "status": "healthy",
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
