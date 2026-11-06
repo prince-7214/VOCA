@@ -1,12 +1,18 @@
 """
 VOCA API — main FastAPI application entry point.
+
+Serves both the API and the React frontend (when built) from a single process.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.core.config import settings
 from app.database.connection import engine, Base
@@ -37,12 +43,29 @@ from app.api.routes.emails import router as emails_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Determine the path to the frontend build directory
+# In production (Railway), the frontend dist is at /app/static or ../frontend/dist
+FRONTEND_DIR = None
+_candidates = [
+    Path(__file__).resolve().parent.parent.parent / "frontend" / "dist",  # local dev: backend/../frontend/dist
+    Path(__file__).resolve().parent.parent / "static",                     # production: backend/static
+    Path("/app/static"),                                                   # railway fallback
+]
+for candidate in _candidates:
+    if candidate.is_dir() and (candidate / "index.html").exists():
+        FRONTEND_DIR = candidate
+        break
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create database tables on startup."""
     logger.info("Creating database tables...")
     Base.metadata.create_all(bind=engine)
+    if FRONTEND_DIR:
+        logger.info("Serving frontend from: %s", FRONTEND_DIR)
+    else:
+        logger.info("No frontend build found — API-only mode.")
     logger.info("VOCA API is ready.")
     yield
     logger.info("VOCA API shutting down.")
@@ -76,7 +99,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers
+# API Routers (must come BEFORE the static file mount)
 app.include_router(voice_router)
 app.include_router(expenses_router)
 app.include_router(tasks_router)
@@ -88,17 +111,6 @@ app.include_router(contacts_router)
 app.include_router(emails_router)
 
 
-@app.get("/")
-async def root():
-    """Root endpoint welcoming users and pointing to API documentation."""
-    return {
-        "message": "VOCA API is running!",
-        "documentation": "/docs",
-        "health": "/health",
-        "status": "healthy",
-    }
-
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -108,4 +120,36 @@ async def health_check():
         "service": "VOCA API",
         "version": "1.0.0",
         "gemini": gemini_status,
+        "frontend": "served" if FRONTEND_DIR else "not available",
     }
+
+
+# ---------------------------------------------------------------------------
+# Serve the React frontend (SPA) from the built dist folder
+# ---------------------------------------------------------------------------
+if FRONTEND_DIR:
+    # Mount static assets (JS, CSS, images) at /assets
+    assets_dir = FRONTEND_DIR / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="static-assets")
+
+    # Catch-all: serve index.html for any non-API route (SPA client-side routing)
+    @app.get("/{full_path:path}")
+    async def serve_frontend(request: Request, full_path: str):
+        """Serve the React SPA — returns index.html for all non-API routes."""
+        # Try to serve the exact file first (e.g., favicon.ico)
+        file_path = FRONTEND_DIR / full_path
+        if full_path and file_path.is_file():
+            return FileResponse(str(file_path))
+        # Otherwise serve index.html for client-side routing
+        return FileResponse(str(FRONTEND_DIR / "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        """Root endpoint when no frontend is available."""
+        return {
+            "message": "VOCA API is running!",
+            "documentation": "/docs",
+            "health": "/health",
+            "status": "healthy",
+        }
