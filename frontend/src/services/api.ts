@@ -13,6 +13,10 @@ import type {
   Contact,
   ContactCreate,
   EmailMessage,
+  User,
+  TokenResponse,
+  LoginCredentials,
+  RegisterCredentials,
 } from '../types';
 
 const api = axios.create({
@@ -20,6 +24,15 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Auto-attach authorization token if present
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('voca_token');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 // Voice
@@ -167,6 +180,22 @@ export async function getEmails(): Promise<EmailMessage[]> {
 
 export async function sendEmail(email: { recipient_email: string; subject: string; body: string }): Promise<EmailMessage> {
   const { data } = await api.post<EmailMessage>('/api/emails', email);
+  return data;
+}
+
+// Authentication
+export async function loginUser(credentials: LoginCredentials): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>('/api/auth/login', credentials);
+  return data;
+}
+
+export async function registerUser(credentials: RegisterCredentials): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>('/api/auth/register', credentials);
+  return data;
+}
+
+export async function getCurrentUser(): Promise<User> {
+  const { data } = await api.get<User>('/api/auth/me');
   return data;
 }
 

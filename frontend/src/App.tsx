@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { VoiceAssistant } from './pages/VoiceAssistant';
@@ -9,23 +10,28 @@ import { Reminders } from './pages/Reminders';
 import { CommandHistory } from './pages/CommandHistory';
 import { Contacts } from './pages/Contacts';
 import { Settings } from './pages/Settings';
+import { Auth } from './pages/Auth';
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="voice" element={<VoiceAssistant />} />
-          <Route path="expenses" element={<Expenses />} />
-          <Route path="tasks" element={<Tasks />} />
-          <Route path="reminders" element={<Reminders />} />
-          <Route path="contacts" element={<Contacts />} />
-          <Route path="history" element={<CommandHistory />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="voice" element={<VoiceAssistant />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="reminders" element={<Reminders />} />
+            <Route path="contacts" element={<Contacts />} />
+            <Route path="history" element={<CommandHistory />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="login" element={<Auth initialMode="login" />} />
+            <Route path="register" element={<Auth initialMode="register" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 };

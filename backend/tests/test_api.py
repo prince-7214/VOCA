@@ -120,5 +120,46 @@ def test_analytics(client):
     assert "daily_expenses" in data
 
 
+def test_auth_flow(client):
+    import uuid
+    uid = uuid.uuid4().hex[:6]
+    username = f"user_{uid}"
+    email = f"user_{uid}@example.com"
+    password = "secretpassword123"
+
+    # 1. Register
+    reg_r = client.post("/api/auth/register", json={
+        "username": username,
+        "email": email,
+        "password": password,
+        "full_name": "Test User"
+    })
+    assert reg_r.status_code == 200
+    reg_data = reg_r.json()
+    assert "access_token" in reg_data
+    assert reg_data["user"]["username"] == username
+    token = reg_data["access_token"]
+
+    # 2. Get profile with token
+    me_r = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me_r.status_code == 200
+    assert me_r.json()["email"] == email
+
+    # 3. Login
+    login_r = client.post("/api/auth/login", json={
+        "username": username,
+        "password": password
+    })
+    assert login_r.status_code == 200
+    assert "access_token" in login_r.json()
+
+    # 4. Failed login
+    fail_r = client.post("/api/auth/login", json={
+        "username": username,
+        "password": "wrongpassword"
+    })
+    assert fail_r.status_code == 401
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

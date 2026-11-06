@@ -25,6 +25,7 @@ from app.models.command_history import CommandHistory  # noqa: F401
 from app.models.conversation_context import ConversationContext  # noqa: F401
 from app.models.contact import Contact  # noqa: F401
 from app.models.email_message import EmailMessage  # noqa: F401
+from app.models.user import User  # noqa: F401
 
 # Create tables immediately on module load to guarantee persistence and table existence
 Base.metadata.create_all(bind=engine)
@@ -39,6 +40,7 @@ from app.api.routes.history import router as history_router
 from app.api.routes.analytics import router as analytics_router
 from app.api.routes.contacts import router as contacts_router
 from app.api.routes.emails import router as emails_router
+from app.api.routes.auth import router as auth_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -109,6 +111,7 @@ app.include_router(history_router)
 app.include_router(analytics_router)
 app.include_router(contacts_router)
 app.include_router(emails_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")

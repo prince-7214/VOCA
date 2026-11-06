@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Mic,
@@ -10,13 +10,18 @@ import {
   Users,
   Settings,
   Database,
+  LogIn,
+  LogOut,
+  User as UserIcon,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
+  const { user, isAuthenticated, logout } = useAuth();
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/voice', label: 'Voice Assistant', icon: Mic },
@@ -74,15 +79,52 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         </nav>
       </div>
 
-      {/* Footer System Status */}
-      <div className="p-3 m-3 rounded-xl border border-slate-200/90 bg-slate-50/70 shadow-2xs">
-        <div className="flex items-center gap-1.5 mb-0.5 text-slate-900 font-bold text-[11px]">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>SQLite Engine Active</span>
+      {/* Footer User & System Status */}
+      <div className="p-3 m-3 space-y-2">
+        {isAuthenticated && user ? (
+          <div className="p-2.5 rounded-xl border border-slate-200/90 bg-slate-50/80 flex items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                {user.full_name ? user.full_name[0] : user.username[0]}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 truncate">
+                  {user.full_name || user.username}
+                </p>
+                <p className="text-[10px] text-slate-500 truncate">@{user.username}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                onCloseMobile?.();
+              }}
+              title="Sign Out"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/login"
+            onClick={onCloseMobile}
+            className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200/80 transition-colors"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
+          </Link>
+        )}
+
+        <div className="p-2.5 rounded-xl border border-slate-200/90 bg-slate-50/70 shadow-2xs">
+          <div className="flex items-center gap-1.5 mb-0.5 text-slate-900 font-bold text-[11px]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>SQLite Engine Active</span>
+          </div>
+          <p className="text-[10px] font-medium text-slate-500 leading-tight">
+            Strict database truth · Zero fake data
+          </p>
         </div>
-        <p className="text-[10px] font-medium text-slate-500 leading-tight">
-          Strict database truth · Zero fake data
-        </p>
       </div>
     </aside>
   );

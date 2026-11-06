@@ -144,3 +144,29 @@ export interface EmailMessage {
   status: string;
   created_at?: string;
 }
+
+// Authentication
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+export interface RegisterCredentials {
+  username: string;
+  email: string;
+  password: string;
+  full_name?: string;
+}
